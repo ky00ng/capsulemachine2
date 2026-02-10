@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onstyle Premium Claw Machine</title>
+
+<style>
+:root {
+    --primary-purple:#8e2de2;
+    --neon-pink:#ff00ff;
+    --deep-purple:#1a0a2e;
+    --machine-border:#bc13fe;
+}
+
+body{
+    margin:0;display:flex;justify-content:center;align-items:center;
+    height:100vh;background:radial-gradient(circle,#3a1c5e,#000);
+    font-family:'Pretendard',sans-serif;color:white;overflow:hidden;
+}
+
+.machine-wrap{
+    width:450px;height:700px;background:var(--deep-purple);
+    border:12px solid var(--machine-border);border-radius:40px;
+    box-shadow:0 0 50px rgba(188,19,254,.6),inset 0 0 20px #000;
+    display:flex;flex-direction:column;position:relative;
+}
+
+.header{
+    height:80px;background:linear-gradient(to bottom,var(--neon-pink),var(--primary-purple));
+    display:flex;justify-content:center;align-items:center;
+    font-size:32px;font-weight:900;letter-spacing:5px;
+    border-bottom:5px solid var(--machine-border);
+    text-shadow:0 0 10px #fff;
+}
+
+.game-window{
+    flex-grow:1;position:relative;background:#0c0414;
+    overflow:hidden;box-shadow:inset 0 0 40px #000;
+}
+
+/* 와이어 */
+#claw-arm{
+    position:absolute;top:0;left:50%;
+    width:8px;height:40px;
+    background:linear-gradient(to right,#888,#fff,#888);
+    transform:translateX(-50%);
+    transition:left .25s ease-out;
+    z-index:100;
+}
+
+/* 집게 헤드 */
+#claw-head{
+    position:absolute;bottom:-12px;left:50%;
+    width:90px;height:80px;
+    transform:translateX(-50%);
+}
+
+.claw-core{
+    position:absolute;top:0;left:50%;
+    width:18px;height:18px;
+    background:radial-gradient(circle,#fff,#aaa);
+    border-radius:50%;
+    transform:translateX(-50%);
+    box-shadow:inset 0 0 5px rgba(0,0,0,.6);
+}
+
+.hook{
+    position:absolute;width:14px;height:60px;
+    background:linear-gradient(to bottom,#fff,#9e9e9e);
+    border-radius:0 0 14px 14px;
+    top:12px;transform-origin:top;
+    transition:transform .5s cubic-bezier(.19,1,.22,1);
+}
+
+.hook-left{left:8px;transform:rotate(-45deg);}
+.hook-right{right:8px;transform:rotate(45deg);}
+.hook-center{left:50%;transform:translateX(-50%) rotate(0deg);}
+
+.grabbing .hook-left{transform:rotate(-15deg);}
+.grabbing .hook-right{transform:rotate(15deg);}
+.grabbing .hook-center{transform:translateX(-50%) rotate(0deg);}
+
+/* 캡슐 */
+.capsule{
+    position:absolute;width:50px;height:50px;border-radius:50%;
+    bottom:20px;
+    box-shadow:inset -5px -5px 10px rgba(0,0,0,.5),0 5px 15px rgba(0,0,0,.5);
+    border:1px solid rgba(255,255,255,.25);
+    z-index:50;
+}
+
+/* 파티클 */
+.sparkle{
+    position:absolute;width:6px;height:6px;border-radius:50%;
+    background:radial-gradient(circle,#fff,#ff00ff);
+    animation:spark .6s ease-out forwards;
+}
+
+@keyframes spark{
+    0%{transform:scale(0) translate(0,0);opacity:1;}
+    100%{transform:scale(1.4) translate(var(--x),var(--y));opacity:0;}
+}
+
+/* 하단 */
+.footer{
+    height:100px;background:#050208;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    border-top:4px solid #3a1c5e;
+}
+
+.guide-text{color:#bc13fe;font-size:16px;font-weight:bold}
+
+/* 결과 모달 */
+.overlay{
+    display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,.85);backdrop-filter:blur(5px);z-index:200;
+}
+
+.modal{
+    display:none;position:fixed;top:50%;left:50%;
+    transform:translate(-50%,-50%);
+    width:320px;background:white;padding:36px 24px;
+    border-radius:26px;text-align:center;z-index:201;color:#333;
+    box-shadow:0 20px 50px rgba(0,0,0,.3);
+    animation:pop .5s ease;
+}
+
+@keyframes pop{
+    0%{transform:translate(-50%,-50%) scale(.7);opacity:0;}
+    100%{transform:translate(-50%,-50%) scale(1);opacity:1;}
+}
+
+.ticket-title{font-size:26px;font-weight:900;color:var(--primary-purple);}
+.ticket-desc{font-size:14px;color:#666;margin:10px 0 18px;}
+.ticket-reward{font-size:22px;font-weight:900;color:#ff00aa;margin-bottom:22px;}
+
+.btn-reset{
+    background:linear-gradient(to right,#8e2de2,#ff00ff);
+    color:white;border:none;padding:14px 40px;border-radius:30px;
+    font-size:16px;font-weight:bold;cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="machine-wrap">
+    <div class="header">Onstyle</div>
+    <div class="game-window" id="game-window">
+        <div id="claw-arm">
+            <div id="claw-head">
+                <div class="claw-core"></div>
+                <div class="hook hook-left"></div>
+                <div class="hook hook-right"></div>
+                <div class="hook hook-center"></div>
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        <div class="guide-text">🕹️ 방향키 이동 / SPACE 뽑기</div>
+    </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="modal" id="modal">
+    <div class="ticket-title">🎉 당첨!</div>
+    <div class="ticket-desc">축하합니다. 아래 혜택이 지급되었습니다.</div>
+    <div class="ticket-reward" id="coupon-name">-</div>
+    <button class="btn-reset" onclick="location.reload()">쿠폰 다운로드</button>
+</div>
+
+<script>
+const arm=document.getElementById('claw-arm');
+const windowArea=document.getElementById('game-window');
+const modal=document.getElementById('modal');
+const overlay=document.getElementById('overlay');
+const couponName=document.getElementById('coupon-name');
+
+let posX=50,isMoving=false,currentHeight=40;
+
+const rewards=['5% DISCOUNT','10% DISCOUNT','1,000원 할인 쿠폰','무료 배송권 🚛'];
+const colors=['#FF9FF3','#00D2D3','#54A0FF','#FECA57','#FF6B6B','#A29BFE'];
+const capsules=[];
+
+function init(){
+    for(let i=0;i<8;i++){
+        const cap=document.createElement('div');
+        cap.className='capsule';
+        cap.style.left=(50+i*45)+'px';
+        cap.style.backgroundColor=colors[i%colors.length];
+        windowArea.appendChild(cap);
+        capsules.push({el:cap});
+    }
+}
+
+window.addEventListener('keydown',e=>{
+    if(isMoving)return;
+    if(e.key==='ArrowLeft'){posX=Math.max(10,posX-3.5);arm.style.left=posX+'%';}
+    else if(e.key==='ArrowRight'){posX=Math.min(90,posX+3.5);arm.style.left=posX+'%';}
+    else if(e.code==='Space'){isMoving=true;performAction();}
+});
+
+function performAction(){
+    const maxHeight=windowArea.clientHeight-95;
+
+    let down=setInterval(()=>{
+        currentHeight+=2;
+        arm.style.height=currentHeight+'px';
+        if(currentHeight>=maxHeight){
+            clearInterval(down);
+
+            setTimeout(()=>arm.classList.add('grabbing'),120);
+
+            const caught=checkCollision();
+            if(caught){
+                sparkleEffect();
+                caught.style.transition="none";
+                caught.style.bottom="-8px";
+                caught.style.left="50%";
+                caught.style.transform="translateX(-50%)";
+                document.getElementById('claw-head').appendChild(caught);
+            }
+
+            setTimeout(()=>{
+                let up=setInterval(()=>{
+                    currentHeight-=2.5;
+                    arm.style.height=currentHeight+'px';
+                    if(currentHeight<=40){
+                        clearInterval(up);
+                        showResult(caught);
+                    }
+                },20);
+            },700);
+        }
+    },20);
+}
+
+function sparkleEffect(){
+    const rect=document.getElementById('claw-head').getBoundingClientRect();
+    for(let i=0;i<16;i++){
+        const s=document.createElement('div');
+        s.className='sparkle';
+        s.style.left=rect.left+40+'px';
+        s.style.top=rect.top+30+'px';
+        s.style.setProperty('--x',(Math.random()*80-40)+'px');
+        s.style.setProperty('--y',(Math.random()*80-40)+'px');
+        document.body.appendChild(s);
+        setTimeout(()=>s.remove(),600);
+    }
+}
+
+function checkCollision(){
+    const armRect=arm.getBoundingClientRect();
+    const mid=armRect.left+armRect.width/2;
+    let target=null;
+    capsules.forEach(c=>{
+        const r=c.el.getBoundingClientRect();
+        if(Math.abs(mid-(r.left+r.width/2))<26) target=c.el;
+    });
+    return target;
+}
+
+function showResult(win){
+    overlay.style.display='block';
+    modal.style.display='block';
+    couponName.innerText=win?rewards[Math.floor(Math.random()*rewards.length)]:"아까워요! 다시 도전 🎯";
+}
+
+init();
+</script>
+
+</body>
+</html>
+
